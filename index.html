@@ -124,7 +124,9 @@ mark.search-hit { background: rgba(240,192,96,.35); color: var(--gold); padding:
 .tag-green { background: rgba(76,175,132,.2); color: var(--green); }
 
 /* Hotlist */
-.hotlist-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.hotlist-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background .15s; }
+.hotlist-item:hover { background: rgba(255,255,255,.02); }
+.hotlist-item:active { background: rgba(255,255,255,.04); }
 .hotlist-item:last-child { border-bottom: none; }
 .hot-rank { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
 .hot-rank.r1 { background: linear-gradient(135deg,#ff6b6b,#e94560); color:#fff; }
@@ -145,8 +147,11 @@ mark.search-hit { background: rgba(240,192,96,.35); color: var(--gold); padding:
 .hot-num { font-size:12px; font-weight:700; color:var(--gold); width:30px; text-align:right; }
 
 /* Hook trend */
-.hook-trend-item { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.hook-trend-item { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.04); transition: background .15s; }
+.hook-trend-item:hover { background: rgba(255,255,255,.02); }
+.hook-trend-item:active { background: rgba(255,255,255,.04); }
 .hook-trend-item:last-child { border-bottom:none; }
+.hook-trend-item.hook-expanded { background: rgba(240,192,96,.06); }
 .hook-trend-icon { font-size:20px; width:28px; text-align:center; flex-shrink:0; }
 .hook-trend-info { flex:1; min-width:0; }
 .hook-trend-name { font-size:13px; font-weight:600; }
@@ -423,13 +428,13 @@ function renderDash() {
       ${escapeHtml(DATA.core.audience)}
     </div></div>`;
 
-  // Hotlist — real-time trending leaderboard
+  // Hotlist — real-time trending leaderboard (clickable for details)
   if (DATA.hotlist && DATA.hotlist.length) {
-    html += `<div class="card"><h3>🔥 红果+抖音 SS+ 实时热力榜</h3>`;
+    html += `<div class="card"><h3>🔥 红果+抖音 SS+ 实时热力榜</h3><div style="font-size:10px;color:var(--sub);margin-bottom:6px">👆 点击剧名查看完整剧本信息</div>`;
     DATA.hotlist.forEach((h, i) => {
       const rankCls = h.rank === 1 ? 'r1' : h.rank === 2 ? 'r2' : h.rank === 3 ? 'r3' : 'rn';
       const heatCls = h.heat >= 95 ? 'super' : h.heat >= 85 ? 'high' : h.heat >= 75 ? 'mid' : 'low';
-      html += `<div class="hotlist-item">
+      html += `<div class="hotlist-item" data-hotlist-idx="${i}" style="cursor:pointer">
         <div class="hot-rank ${rankCls}">${h.rank}</div>
         <div class="hot-info">
           <div class="hot-title" title="${escapeHtml(h.title)}">${escapeHtml(h.title)}</div>
@@ -455,11 +460,11 @@ function renderDash() {
     html += `</div></div>`;
   }
 
-  // Hook trends
+  // Hook trends — expandable details
   if (DATA.hookTrends && DATA.hookTrends.length) {
-    html += `<div class="card"><h3>🪝 SS+ 级爆款钩子风向</h3>`;
-    DATA.hookTrends.forEach(h => {
-      html += `<div class="hook-trend-item">
+    html += `<div class="card"><h3>🪝 SS+ 级爆款钩子风向</h3><div style="font-size:10px;color:var(--sub);margin-bottom:6px">👆 点击展开详细分析</div>`;
+    DATA.hookTrends.forEach((h, i) => {
+      html += `<div class="hook-trend-item" data-hook-idx="${i}" style="cursor:pointer">
         <span class="hook-trend-icon">${h.icon}</span>
         <div class="hook-trend-info">
           <span class="hook-trend-name">${escapeHtml(h.hook)}</span>
@@ -467,6 +472,16 @@ function renderDash() {
           <div class="hook-trend-theme">🎬 ${escapeHtml(h.theme)}</div>
         </div>
         <span class="hook-trend-rate">${h.rate}%</span>
+      </div>
+      <div class="hook-detail" id="hook-detail-${i}" style="display:none;padding:10px 14px;margin:0 0 4px 36px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:11px;line-height:1.7;color:var(--sub);border-left:2px solid var(--border)">
+        <div style="color:var(--gold);font-weight:600;margin-bottom:6px">📖 适用场景</div>
+        <div style="margin-bottom:8px">${escapeHtml(h.scenarios || '')}</div>
+        <div style="color:var(--accent);font-weight:600;margin-bottom:4px">📍 最佳位置</div>
+        <div style="margin-bottom:8px">${escapeHtml(h.placement || '')}</div>
+        <div style="color:var(--green);font-weight:600;margin-bottom:4px">🎬 爆款案例</div>
+        <div style="margin-bottom:8px">${escapeHtml(h.example || '')}</div>
+        <div style="color:#c084fc;font-weight:600;margin-bottom:4px">🧠 观众心理</div>
+        <div>${escapeHtml(h.psychology || '')}</div>
       </div>`;
     });
     html += `<div style="font-size:10px;color:var(--sub);margin-top:6px">📈 占比基于 2026上半年红果+抖音 SS/S+ 级爆款钩子类型统计</div></div>`;
@@ -704,6 +719,28 @@ function bindTabEvents() {
     }, 60);
   });
 
+  // Hotlist: click to open drama detail modal
+  document.querySelectorAll('.hotlist-item[data-hotlist-idx]').forEach(el => {
+    el.addEventListener('click', function() {
+      const idx = parseInt(this.dataset.hotlistIdx);
+      if (DATA.hotlist && DATA.hotlist[idx]) {
+        showDramaDetail(DATA.hotlist[idx]);
+      }
+    });
+  });
+
+  // Hook trends: click to toggle detail expand
+  document.querySelectorAll('.hook-trend-item[data-hook-idx]').forEach(el => {
+    el.addEventListener('click', function() {
+      const idx = this.dataset.hookIdx;
+      const detail = document.getElementById('hook-detail-' + idx);
+      if (detail) {
+        detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+        this.classList.toggle('hook-expanded');
+      }
+    });
+  });
+
   // Dashboard: refresh button
   const btnRefresh = document.getElementById('btn-refresh');
   if (btnRefresh) btnRefresh.addEventListener('click', refreshData);
@@ -837,6 +874,47 @@ function selectProject(name) {
   document.querySelectorAll('.modal-overlay').forEach(e => e.remove());
   render();
   toast(`已切换到「${name}」`);
+}
+
+// ==================== Drama Detail Modal ====================
+function showDramaDetail(d) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal" style="max-width:480px;max-height:85vh">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div class="hot-rank ${d.rank===1?'r1':d.rank===2?'r2':d.rank===3?'r3':'rn'}" style="font-size:14px;width:30px;height:30px">${d.rank}</div>
+      <div style="flex:1"><h3 style="margin:0;color:#fff">${escapeHtml(d.title)}</h3></div>
+      <span class="trend-score">${d.heat}°</span>
+    </div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:12px">${escapeHtml(d.type)} · ${d.episodes}集 · 核心钩子：${escapeHtml(d.hook)}</div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:4px">📖 故事梗概</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.7">${escapeHtml(d.synopsis || '暂无')}</div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px">🪝 钩子结构拆解</div>
+      <div style="font-size:11px;color:var(--sub);line-height:1.7">${escapeHtml(d.hookBreakdown || '暂无')}</div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:var(--green);font-weight:600;margin-bottom:4px">🔑 成功要素</div>
+      <div style="font-size:11px;color:var(--sub);line-height:1.7">${escapeHtml(d.successFactors || '暂无')}</div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:#c084fc;font-weight:600;margin-bottom:4px">⏱️ 节奏设计</div>
+      <div style="font-size:11px;color:var(--sub);line-height:1.7">${escapeHtml(d.pacing || '暂无')}</div>
+    </div>
+
+    <button class="btn btn-outline" style="margin-top:8px">关闭</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay || e.target.textContent === '关闭') overlay.remove();
+  });
+  overlay.querySelector('.btn').addEventListener('click', () => overlay.remove());
 }
 
 // ==================== Service Worker ====================
