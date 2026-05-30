@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<title>编剧工作台 v4.0</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root {
+  --bg: #0d0d1a; --card: #1a1a2e; --accent: #e94560; --gold: #f0c060;
+  --text: #e0e0e0; --sub: #888; --green: #4caf84; --red: #e94560;
+  --border: #2a2a45; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+.app { max-width: 720px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+
+.header { text-align: center; padding: 20px 0 12px; }
+.header h1 { font-size: 22px; color: var(--gold); letter-spacing: 1px; }
+.header .ver { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.sync-info { font-size: 10px; color: var(--sub); margin-top: 4px; }
+.sync-info .live { color: var(--green); }
+
+.tabs { display: flex; gap: 6px; margin: 12px 0; background: var(--card); border-radius: var(--radius); padding: 4px; position: sticky; top: 8px; z-index: 10; }
+.tab { flex: 1; text-align: center; padding: 10px 4px; border-radius: 10px; font-size: 12px; cursor: pointer; color: var(--sub); transition: all .2s; border: none; background: none; }
+.tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+.tab .icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+.card { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+.card h3 { font-size: 15px; color: var(--gold); margin-bottom: 10px; }
+.card h4 { font-size: 13px; color: #ccc; margin: 10px 0 6px; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: var(--card); border-radius: var(--radius); padding: 14px; text-align: center; border: 1px solid var(--border); }
+.stat .num { font-size: 28px; font-weight: 700; color: var(--gold); }
+.stat .label { font-size: 11px; color: var(--sub); margin-top: 4px; }
+
+.btn { display: block; width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 14px; cursor: pointer; font-weight: 600; margin: 6px 0; transition: all .2s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+.btn-sm { width: auto; display: inline-block; padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+.btn-refresh { background: rgba(76,175,132,.15); border: 1px solid var(--green); color: var(--green); }
+
+.step { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.step:last-child { border-bottom: none; }
+.step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.step-info { flex: 1; }
+.step-info .name { font-size: 14px; font-weight: 600; }
+.step-info .desc { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+.check-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+.check-item:last-child { border-bottom: none; }
+.check-box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all .2s; }
+.check-box.checked { background: var(--green); border-color: var(--green); color: #fff; }
+.check-label { font-size: 13px; }
+.check-cat { font-size: 11px; color: var(--accent); font-weight: 700; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+.rule-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; line-height: 1.6; }
+.rule-item:last-child { border-bottom: none; }
+.rule-num { display: inline-block; background: var(--accent); color: #fff; width: 20px; height: 20px; border-radius: 50%; text-align: center; font-size: 10px; line-height: 20px; margin-right: 6px; flex-shrink: 0; }
+.rule-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-right: 4px; }
+.tag-red { background: rgba(233,69,96,.2); color: var(--red); }
+.tag-gold { background: rgba(240,192,96,.2); color: var(--gold); }
+.tag-green { background: rgba(76,175,132,.2); color: var(--green); }
+
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width .3s; }
+
+.toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 13px; z-index: 100; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; padding: 6px 0 env(safe-area-inset-bottom, 8px); z-index: 20; }
+.nav-btn { flex: 1; text-align: center; padding: 6px; color: var(--sub); font-size: 10px; background: none; border: none; cursor: pointer; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn .icon { font-size: 20px; display: block; }
+
+@media (min-width: 600px) {
+  .app { padding: 24px; padding-bottom: 40px; }
+  .header h1 { font-size: 26px; }
+  .tabs { gap: 8px; }
+  .tab { font-size: 13px; padding: 12px 8px; }
+  .nav { display: none; }
+}
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; }
+.modal { background: var(--card); border-radius: var(--radius); padding: 20px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+.modal h3 { color: var(--gold); margin-bottom: 12px; }
+.modal input, .modal textarea, .modal select { width: 100%; padding: 10px; margin: 6px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; }
+.modal textarea { min-height: 80px; resize: vertical; margin-bottom: 8px; }
+.modal .hint { font-size: 11px; color: var(--sub); margin: 4px 0; }
+
+.collapse-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+.collapse-content { display: none; }
+.collapse-content.open { display: block; }
+.arrow { transition: transform .2s; font-size: 12px; }
+.arrow.open { transform: rotate(180deg); }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="header">
+    <h1>编剧工作台</h1>
+    <div class="ver">v<span id="data-version">4.0</span> · 短剧创作专用</div>
+    <div class="sync-info" id="sync-info">加载中...</div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" onclick="switchTab('dash')"><span class="icon">🏠</span>工作台</button>
+    <button class="tab" onclick="switchTab('flow')"><span class="icon">📋</span>工作流</button>
+    <button class="tab" onclick="switchTab('rules')"><span class="icon">📖</span>规则库</button>
+    <button class="tab" onclick="switchTab('check')"><span class="icon">✅</span>自检</button>
+  </div>
+
+  <div id="tab-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="nav" id="nav">
+  <button class="nav-btn active" onclick="switchTab('dash')"><span class="icon">🏠</span>工作台</button>
+  <button class="nav-btn" onclick="switchTab('flow')"><span class="icon">📋</span>工作流</button>
+  <button class="nav-btn" onclick="switchTab('rules')"><span class="icon">📖</span>规则</button>
+  <button class="nav-btn" onclick="switchTab('check')"><span class="icon">✅</span>自检</button>
+</div>
+
+<script>
+// ── Global State ──
+let DATA = null;
+let currentTab = 'dash';
+let checkState = {};
+let projects = JSON.parse(localStorage.getItem('scripter_projects') || '[]');
+let activeProject = localStorage.getItem('scripter_active') || '';
+
+const savedChecks = localStorage.getItem('scripter_checks');
+if (savedChecks) checkState = JSON.parse(savedChecks);
+
+// ── Rules section metadata ──
+const RULE_SECTIONS = [
+  {key:'redlines', title:'🚫 写作红线（9条·零容忍）', tag:'tag-red'},
+  {key:'iron', title:'⚡ 内容铁律（3条·每集强制）', tag:'tag-gold'},
+  {key:'emotion', title:'🏦 情绪银行机制', tag:'tag-gold'},
+  {key:'hooks', title:'🪝 钩子工程学', tag:'tag-green'},
+  {key:'rhythm', title:'🎵 节奏工程学', tag:'tag-green'},
+  {key:'game', title:'🎮 游戏化系统设计', tag:'tag-gold'},
+  {key:'character', title:'👤 人物驱动设计', tag:'tag-gold'},
+  {key:'format', title:'📄 剧本格式规范', tag:'tag-green'}
+];
+
+// ── Data Loading ──
+async function loadData() {
+  try {
+    const resp = await fetch('data.json?' + Date.now());
+    if (resp.ok) {
+      DATA = await resp.json();
+      document.getElementById('data-version').textContent = DATA.version;
+      document.getElementById('sync-info').innerHTML = '<span class="live">● 已联动</span> · 更新于 ' + DATA.updated;
+      localStorage.setItem('scripter_data_cache', JSON.stringify(DATA));
+      return true;
+    }
+  } catch(e) {}
+  // Fallback: try cached
+  const cached = localStorage.getItem('scripter_data_cache');
+  if (cached) {
+    DATA = JSON.parse(cached);
+    document.getElementById('sync-info').innerHTML = '<span style="color:#f0a060">◐ 离线缓存</span> · v' + DATA.version;
+    return true;
+  }
+  document.getElementById('sync-info').textContent = '⚠ 数据加载失败，请检查 data.json';
+  return false;
+}
+
+function refreshData() {
+  localStorage.removeItem('scripter_data_cache');
+  loadData().then(() => { render(); toast('数据已刷新 ✓'); });
+}
+
+// ── Toast ──
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── Tab Switching ──
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const ti = ['dash','flow','rules','check'].indexOf(tab);
+  if (ti >= 0) {
+    document.querySelectorAll('.tab')[ti].classList.add('active');
+    document.querySelectorAll('.nav-btn')[ti].classList.add('active');
+  }
+  render();
+  window.scrollTo(0,0);
+}
+
+// ── Render ──
+function render() {
+  const c = document.getElementById('tab-content');
+  if (!DATA) {
+    c.innerHTML = '<div class="card" style="text-align:center"><p>加载数据中...</p><button class="btn btn-outline btn-sm" onclick="refreshData()">重试</button></div>';
+    return;
+  }
+  switch(currentTab) {
+    case 'dash': c.innerHTML = renderDash(); break;
+    case 'flow': c.innerHTML = renderFlow(); break;
+    case 'rules': c.innerHTML = renderRules(); break;
+    case 'check': c.innerHTML = renderCheck(); break;
+  }
+  bindEvents();
+}
+
+// ── Dashboard ──
+function renderDash() {
+  const p = activeProject ? projects.find(x => x.name === activeProject) : null;
+  let html = '';
+  if (p) {
+    html += `<div class="card"><h3>📁 ${p.name}</h3>
+      <div style="font-size:12px;color:var(--sub);margin-bottom:8px">${p.desc || '暂无简介'} · ${p.episodes || 72}集 · ${p.platform || '未设定'}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${p.progress || 0}%"></div></div>
+      <div style="font-size:11px;color:var(--sub)">进度 ${p.progress || 0}% · 已完成 ${p.doneEp || 0}/${p.episodes || 72} 集</div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="newProject()">切换项目</button>
+      </div>`;
+  } else {
+    html += `<div class="card" style="text-align:center">
+      <div style="font-size:48px;margin-bottom:8px">🎬</div>
+      <h3>还没有项目</h3>
+      <p style="font-size:13px;color:var(--sub);margin:8px 0">创建你的第一个短剧项目</p>
+      <button class="btn btn-primary" onclick="newProject()">+ 创建新项目</button>
+      </div>`;
+  }
+
+  html += `<div class="stats">
+    <div class="stat"><div class="num">${projects.length}</div><div class="label">项目数</div></div>
+    <div class="stat"><div class="num">42</div><div class="label">核心规则</div></div>
+    <div class="stat"><div class="num">28</div><div class="label">自检项</div></div>
+    <div class="stat"><div class="num">9</div><div class="label">写作红线</div></div>
+  </div>`;
+
+  html += `<div class="card"><h3>⚡ 核心信条</h3>
+    <div style="font-size:12px;color:var(--sub);line-height:1.8">
+      ${DATA.core.motto}<br>
+      ${DATA.core.newMotto}<br>
+      爆款公式：${DATA.core.formula}<br>
+      ${DATA.core.platform}<br>
+      ${DATA.core.audience}
+    </div></div>`;
+
+  html += `<div class="card"><h3>🔧 工具</h3>
+    <button class="btn btn-refresh btn-sm" onclick="refreshData()">🔄 从工作台同步最新数据</button>
+    <span style="font-size:11px;color:var(--sub);margin-left:8px">读取 data.json</span>
+    </div>`;
+
+  html += `<div class="card"><h3>📋 工作流速览</h3>`;
+  DATA.workflow.forEach((w, i) => {
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <span style="font-size:18px">${w.icon}</span>
+      <div><strong>${w.cmd}</strong><br><span style="font-size:11px;color:var(--sub)">${w.desc}</span></div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  return html;
+}
+
+// ── Workflow ──
+function renderFlow() {
+  let html = '<div class="card"><h3>📋 推荐工作流顺序</h3>';
+  DATA.workflow.forEach((w, i) => {
+    html += `<div class="step">
+      <div class="step-num">${i+1}</div>
+      <div class="step-info">
+        <div class="name">${w.icon} ${w.cmd}</div>
+        <div class="desc">${w.desc}</div>
+      </div></div>`;
+  });
+  html += '</div>';
+
+  html += `<div class="card"><h3>🔴 产出纪律</h3>
+    <div style="font-size:12px;color:var(--sub);line-height:1.8;white-space:pre-wrap"><strong>开始前：</strong>
+${DATA.discipline.preOutput}
+
+<strong>完成后：</strong>
+${DATA.discipline.postOutput}
+
+<strong>正文与自检分离：</strong>
+正文→项目根目录（顺序编号，纯内容）
+自检→自检/自检记录.docx（累计追加）</div></div>`;
+
+  if (DATA.rules.saveTheCat) {
+    html += `<div class="card"><h3>🎬 Save the Cat! 节拍表</h3>
+      <div style="font-size:12px;line-height:1.7;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <tr style="color:var(--gold)"><th style="padding:4px;text-align:left">#</th><th>节拍</th><th>72集</th><th>45集</th><th>核心任务</th></tr>`;
+    DATA.rules.saveTheCat.forEach(b => {
+      html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+        <td style="padding:4px">${b.beat}</td><td>${b.name}</td><td>${b.ep72}</td><td>${b.ep45}</td><td style="color:var(--sub)">${b.task}</td></tr>`;
+    });
+    html += '</table></div></div>';
+  }
+
+  return html;
+}
+
+// ── Rules ──
+function renderRules() {
+  let html = '';
+  RULE_SECTIONS.forEach(sec => {
+    const rules = DATA.rules[sec.key];
+    if (!rules || !rules.length) return;
+    html += `<div class="card"><h3>${sec.title}</h3>`;
+    rules.forEach(r => {
+      html += `<div class="rule-item">
+        <span class="rule-tag ${sec.tag}">${r.n}</span>
+        <strong>${r.title}</strong>
+        <div style="color:var(--sub);font-size:11px;margin-top:2px">${r.desc}</div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  return html;
+}
+
+// ── Check ──
+function renderCheck() {
+  const allItems = [];
+  DATA.checklist.forEach(c => c.items.forEach(i => allItems.push(i)));
+  const total = allItems.length;
+  let checked = 0;
+  allItems.forEach(i => { if (checkState[i]) checked++; });
+
+  let html = `<div class="card"><h3>✅ 自检清单 (${checked}/${total})</h3>
+    <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(checked/total*100)}%"></div></div><br>`;
+
+  DATA.checklist.forEach(cat => {
+    html += `<div class="check-cat">${cat.cat}</div>`;
+    cat.items.forEach(item => {
+      const isChecked = checkState[item];
+      html += `<div class="check-item" data-item="${item}">
+        <div class="check-box${isChecked ? ' checked' : ''}">${isChecked ? '✓' : ''}</div>
+        <span class="check-label">${item}</span>
+      </div>`;
+    });
+  });
+
+  html += `<br>
+    <button class="btn btn-outline btn-sm" onclick="resetChecks()">🔄 重置全部</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:8px" onclick="saveChecks()">💾 保存进度</button>
+  </div>`;
+
+  html += `<div class="card"><h3>⚠️ 输出前最后一关</h3>
+    <div style="font-size:12px;line-height:2">`;
+  DATA.discipline.finalCheck.forEach((item, i) => {
+    html += `<div class="check-item"><div class="check-box" style="background:var(--border);border-color:var(--green)">✓</div> <span>${item}</span></div>`;
+  });
+  html += `</div></div>`;
+
+  return html;
+}
+
+// ── Events ──
+function bindEvents() {
+  if (currentTab === 'check') {
+    document.querySelectorAll('.check-item').forEach(el => {
+      el.onclick = function() {
+        const item = this.dataset.item;
+        if (!item) return;
+        checkState[item] = !checkState[item];
+        saveChecks();
+        render();
+      };
+    });
+  }
+}
+
+function saveChecks() {
+  localStorage.setItem('scripter_checks', JSON.stringify(checkState));
+  toast('自检进度已保存 ✓');
+}
+
+function resetChecks() {
+  if (confirm('确定要重置全部自检项？')) {
+    checkState = {};
+    localStorage.removeItem('scripter_checks');
+    render();
+    toast('已重置');
+  }
+}
+
+// ── Project Management ──
+function newProject() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal">
+    <h3>${activeProject ? '切换' : '创建'}项目</h3>
+    ${projects.length > 0 ? `<div style="max-height:200px;overflow-y:auto;margin-bottom:12px">
+      ${projects.map(p => `<div style="padding:10px;margin:4px 0;background:var(--bg);border-radius:8px;cursor:pointer;font-size:13px" onclick="selectProject('${p.name}')">
+        ${p.name === activeProject ? '✅ ' : ''}${p.name} · ${p.desc || ''} · ${p.episodes || 72}集
+      </div>`).join('')}
+    </div>` : '<p style="font-size:12px;color:var(--sub);margin-bottom:8px">暂无项目，创建第一个：</p>'}
+    <input id="pname" placeholder="项目名称（如：夜王封神）">
+    <input id="pdesc" placeholder="一句话简介">
+    <select id="pfreq"><option value="">选择频向</option><option>男频</option><option>女频</option></select>
+    <select id="peps"><option value="72">预估集数</option><option value="45">45集</option><option value="72">72集</option><option value="100">100集</option></select>
+    <select id="pplat"><option value="">目标平台</option><option>红果首投</option><option>抖音首投</option><option>双平台</option></select>
+    <button class="btn btn-primary" onclick="createProject()">确认</button>
+    <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">取消</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+}
+
+function createProject() {
+  const name = document.getElementById('pname').value.trim();
+  if (!name) { toast('请输入项目名称'); return; }
+  const existing = projects.findIndex(p => p.name === name);
+  const proj = {
+    name,
+    desc: document.getElementById('pdesc').value.trim(),
+    freq: document.getElementById('pfreq').value,
+    episodes: parseInt(document.getElementById('peps').value) || 72,
+    platform: document.getElementById('pplat').value,
+    progress: 0,
+    doneEp: 0,
+    created: new Date().toISOString()
+  };
+  if (existing >= 0) {
+    projects[existing] = {...projects[existing], ...proj};
+  } else {
+    projects.push(proj);
+  }
+  activeProject = name;
+  localStorage.setItem('scripter_projects', JSON.stringify(projects));
+  localStorage.setItem('scripter_active', activeProject);
+  document.querySelectorAll('.modal-overlay').forEach(e => e.remove());
+  render();
+  toast(`项目「${name}」已保存 ✓`);
+}
+
+function selectProject(name) {
+  activeProject = name;
+  localStorage.setItem('scripter_active', activeProject);
+  document.querySelectorAll('.modal-overlay').forEach(e => e.remove());
+  render();
+  toast(`已切换到「${name}」`);
+}
+
+// ── Init ──
+loadData().then(() => render());
+</script>
+</body>
+</html>
