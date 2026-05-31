@@ -1,9 +1,11 @@
-// Service Worker for 编剧工作台 v4.1 — offline-first PWA
-const CACHE_NAME = 'scripter-v4.1-' + '20260531';
+// Service Worker for 编剧工作台 v5.0
+// Bump CACHE_VERSION on each deploy to bust cache
+const CACHE_VERSION = 'v5.0';
+const CACHE_NAME = 'scripter-' + CACHE_VERSION;
+
 const PRE_CACHE = [
   './',
   './index.html',
-  './data.json',
   './manifest.json'
 ];
 
@@ -27,35 +29,20 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch: stale-while-revalidate for HTML, cache-first for data
+// Fetch: cache-first for all assets (data is inline in HTML, no JSON fetch needed)
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
-  const url = new URL(event.request.url);
-  const isData = url.pathname.endsWith('.json');
-
-  if (isData) {
-    // Network-first for data.json (fresh data), fallback to cache
-    event.respondWith(
-      fetch(event.request).then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      const fetchPromise = fetch(event.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
         return response;
-      }).catch(() => caches.match(event.request))
-    );
-  } else {
-    // Cache-first for static assets
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        const fetchPromise = fetch(event.request).then(response => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          }
-          return response;
-        });
-        return cached || fetchPromise;
-      })
-    );
-  }
+      }).catch(() => cached);
+      return cached || fetchPromise;
+    })
+  );
 });
